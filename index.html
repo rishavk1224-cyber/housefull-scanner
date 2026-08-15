@@ -472,10 +472,25 @@ function resetScanner() {
     "Camera ready — waiting for QR";
 }
 
-window.addEventListener(
-  "load",
-  startScanner
-);
+window.addEventListener("load", function() {
+
+  document.getElementById("status").innerText =
+    "Page loaded — starting camera...";
+
+  if (typeof Html5Qrcode === "undefined") {
+
+    document.getElementById("status").innerText =
+      "ERROR: QR scanner library did not load.";
+
+    return;
+  }
+
+  document.getElementById("status").innerText =
+    "QR library loaded — starting camera...";
+
+  startScanner();
+
+});
 
 </script>
 
