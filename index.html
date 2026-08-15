@@ -248,15 +248,15 @@ function startScanner() {
       busy = true;
       lastCode = decodedText;
 
-      let ticketID =
-        decodedText.trim().toUpperCase();
+     let ticketID = decodedText.trim().toUpperCase();
 
-      const match =
-        ticketID.match(/HF-\d{4}/);
+const match = ticketID.match(/HF-\d{4}/);
 
-      if (match) {
-        ticketID = match[0];
-      }
+if (match) {
+  ticketID = match[0];
+}
+
+alert("QR READ:\n" + decodedText + "\n\nID SENT:\n" + ticketID);
 
       document.getElementById("status")
         .innerText =
