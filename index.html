@@ -4,7 +4,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>HOUSEFULL Scanner</title>
 
-  <alert("BACKEND REQUEST:\n" + url);
+  
 script.src = url;>
 
   <style>
@@ -172,31 +172,35 @@ function escapeHTML(text) {
 function callBackend(action, id, pin, callback) {
 
   const callbackName =
-    "housefullCallback" +
-    Date.now();
+    "housefullCallback_" +
+    Date.now() +
+    "_" +
+    Math.floor(Math.random() * 10000);
 
   const script =
     document.createElement("script");
 
   window[callbackName] = function(data) {
 
-    delete window[callbackName];
+    try {
+      callback(data);
+    } finally {
+      delete window[callbackName];
+      script.remove();
+    }
 
-    script.remove();
-
-    callback(data);
   };
 
   script.onerror = function() {
 
     delete window[callbackName];
-
     script.remove();
 
     callback({
       status: "ERROR",
       message: "Could not contact ticket database."
     });
+
   };
 
   let url =
@@ -213,12 +217,11 @@ function callBackend(action, id, pin, callback) {
       "&pin=" +
       encodeURIComponent(pin);
   }
-alert("BACKEND REQUEST:\n" + url);
+
   script.src = url;
 
   document.body.appendChild(script);
 }
-
 function startScanner() {
 
   const scanner =
@@ -255,7 +258,7 @@ if (match) {
   ticketID = match[0];
 }
 
-alert("QR READ:\n" + decodedText + "\n\nID SENT:\n" + ticketID);
+
 
       document.getElementById("status")
         .innerText =
@@ -294,7 +297,7 @@ alert("QR READ:\n" + decodedText + "\n\nID SENT:\n" + ticketID);
 }
 
 function showResult(result) {
-alert(JSON.stringify(result));
+
   const box =
     document.getElementById("result");
 
