@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HOUSEFULL Scanner</title>
+
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #090909;
+      color: white;
+      font-family: Arial, sans-serif;
+    }
+
+    .header {
+      text-align: center;
+      padding: 25px 15px 15px;
+    }
+
+    .logo {
+      font-size: 32px;
+      font-weight: 900;
+      letter-spacing: 4px;
+    }
+
+    .sub {
+      font-size: 11px;
+      letter-spacing: 2px;
+      opacity: .65;
+      margin-top: 5px;
+    }
+
+    .container {
+      max-width: 520px;
+      margin: auto;
+      padding: 10px 16px 35px;
+    }
+
+    .scanner {
+      background: #161616;
+      border-radius: 20px;
+      padding: 12px;
+    }
+
+    #reader {
+      width: 100%;
+      overflow: hidden;
+      border-radius: 15px;
+    }
+
+    #reader video {
+      border-radius: 15px;
+    }
+
+    .tip {
+      text-align: center;
+      color: #aaa;
+      font-size: 13px;
+      padding: 12px;
+    }
+
+    .status {
+      text-align: center;
+      color: #aaa;
+      font-size: 13px;
+      margin-top: 15px;
+    }
+
+    .result {
+      display: none;
+      margin-top: 18px;
+      padding: 22px;
+      border-radius: 18px;
+      text-align: center;
+    }
+
+    .valid {
+      background: #118443;
+    }
+
+    .used {
+      background: #b00020;
+    }
+
+    .invalid {
+      background: #444;
+    }
+
+    .big {
+      font-size: 28px;
+      font-weight: 900;
+    }
+
+    .ticket {
+      margin-top: 14px;
+      line-height: 1.8;
+    }
+
+    button {
+      width: 100%;
+      padding: 15px;
+      margin-top: 15px;
+      border: 0;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    .use {
+      background: white;
+      color: black;
+    }
+
+    .next {
+      background: #222;
+      color: white;
+      border: 1px solid #666;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="header">
+  <div class="logo">HOUSEFULL</div>
+  <div class="sub">ENTRY SCANNER • 22 AUGUST</div>
+</div>
+
+<div class="container">
+
+  <div class="scanner">
+    <div id="reader"></div>
+
+    <div class="tip">
+      Point the camera at the QR code on the guest's pass.
+    </div>
+  </div>
+
+  <div id="status" class="status">
+    Starting camera...
+  </div>
+
+  <div id="result" class="result"></div>
+
+</div>
+
+<script>
+
+const BACKEND =
+"https://script.google.com/macros/s/AKfycbxQZi4wr0nfcW4ptflcHRsgX6NBZaFZfPhvIWKXh9UF6Ggv8iGabKLbhFhU11ZC8M3z/exec";
+
+let busy = false;
+let lastCode = "";
+
+function escapeHTML(text) {
+  return String(text || "").replace(/[&<>"']/g, function(c) {
+    return {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;"
+    }[c];
+  });
+}
+
+function callBackend(action, id, pin, callback) {
+
+  const callbackName =
+    "housefullCallback" +
+    Date.now();
+
+  const script =
+    document.createElement("script");
+
+  window[callbackName] = function(data) {
+
+    delete window[callbackName];
+
+    script.remove();
+
+    callback(data);
+  };
+
+  script.onerror = function() {
+
+    delete window[callbackName];
+
+    script.remove();
+
+    callback({
+      status: "ERROR",
+      message: "Could not contact ticket database."
+    });
+  };
+
+  let url =
+    BACKEND +
+    "?action=" +
+    encodeURIComponent(action) +
+    "&id=" +
+    encodeURIComponent(id) +
+    "&callback=" +
+    encodeURIComponent(callbackName);
+
+  if (pin) {
+    url +=
+      "&pin=" +
+      encodeURIComponent(pin);
+  }
+
+  script.src = url;
+
+  document.body.appendChild(script);
+}
+
+function startScanner() {
+
+  const scanner =
+    new Html5Qrcode("reader");
+
+  scanner.start(
+
+    {
+      facingMode: "environment"
+    },
+
+    {
+      fps: 10,
+      qrbox: {
+        width: 250,
+        height: 250
+      }
+    },
+
+    function(decodedText) {
+
+      if (busy || decodedText === lastCode) {
+        return;
+      }
+
+      busy = true;
+      lastCode = decodedText;
+
+      let ticketID =
+        decodedText.trim().toUpperCase();
+
+      const match =
+        ticketID.match(/HF-\d{4}/);
+
+      if (match) {
+        ticketID = match[0];
+      }
+
+      document.getElementById("status")
+        .innerText =
+        "Checking ticket...";
+
+      callBackend(
+        "verify",
+        ticketID,
+        null,
+        showResult
+      );
+
+    },
+
+    function() {
+      // Normal scan misses are ignored.
+    }
+
+  )
+
+  .then(function() {
+
+    document.getElementById("status")
+      .innerText =
+      "Camera ready — waiting for QR";
+
+  })
+
+  .catch(function(error) {
+
+    document.getElementById("status")
+      .innerText =
+      "Camera blocked. Please allow camera permission and reload.";
+
+  });
+}
+
+function showResult(result) {
+
+  const box =
+    document.getElementById("result");
+
+  box.style.display = "block";
+
+  if (!result.ticket) {
+
+    box.className =
+      "result invalid";
+
+    box.innerHTML =
+
+      "<div class='big'>❌ INVALID</div>" +
+
+      "<div class='ticket'>" +
+      "This is not a valid HOUSEFULL ticket." +
+      "</div>" +
+
+      "<button class='next' " +
+      "onclick='resetScanner()'>" +
+      "SCAN NEXT TICKET" +
+      "</button>";
+
+    return;
+  }
+
+  const ticket =
+    result.ticket;
+
+  if (result.status === "VALID") {
+
+    box.className =
+      "result valid";
+
+    box.innerHTML =
+
+      "<div class='big'>" +
+      "✅ VALID TICKET" +
+      "</div>" +
+
+      "<div class='ticket'>" +
+
+      "<b>Ticket:</b> " +
+      escapeHTML(ticket.id) +
+
+      "<br>" +
+
+      "<b>Guest:</b> " +
+      escapeHTML(ticket.guest || "Not assigned") +
+
+      "<br>" +
+
+      "<b>Type:</b> " +
+      escapeHTML(ticket.type || "General Entry") +
+
+      "</div>" +
+
+      "<button class='use' " +
+      "onclick='markUsed(\"" +
+      escapeHTML(ticket.id) +
+      "\")'>" +
+
+      "MARK AS USED" +
+
+      "</button>" +
+
+      "<button class='next' " +
+      "onclick='resetScanner()'>" +
+
+      "CANCEL / SCAN NEXT" +
+
+      "</button>";
+
+  } else {
+
+    box.className =
+      "result used";
+
+    box.innerHTML =
+
+      "<div class='big'>" +
+      "🚨 ALREADY USED" +
+      "</div>" +
+
+      "<div class='ticket'>" +
+
+      "<b>Ticket:</b> " +
+      escapeHTML(ticket.id) +
+
+      "<br>" +
+
+      "<b>Guest:</b> " +
+      escapeHTML(ticket.guest || "Not assigned") +
+
+      "</div>" +
+
+      "<button class='next' " +
+      "onclick='resetScanner()'>" +
+
+      "SCAN NEXT TICKET" +
+
+      "</button>";
+  }
+}
+
+function markUsed(id) {
+
+  const pin =
+    prompt("Enter entrance Admin PIN");
+
+  if (pin === null) {
+    return;
+  }
+
+  callBackend(
+    "use",
+    id,
+    pin,
+    function(result) {
+
+      if (result.status === "USED") {
+
+        const box =
+          document.getElementById("result");
+
+        box.className =
+          "result used";
+
+        box.style.display =
+          "block";
+
+        box.innerHTML =
+
+          "<div class='big'>" +
+          "✅ ENTRY CONFIRMED" +
+          "</div>" +
+
+          "<div class='ticket'>" +
+          "Ticket " +
+          escapeHTML(id) +
+          " has been marked as USED." +
+          "</div>" +
+
+          "<button class='next' " +
+          "onclick='resetScanner()'>" +
+
+          "SCAN NEXT TICKET" +
+
+          "</button>";
+
+      } else {
+
+        alert(
+          result.message ||
+          "Could not mark ticket."
+        );
+      }
+
+    }
+  );
+}
+
+function resetScanner() {
+
+  busy = false;
+  lastCode = "";
+
+  document.getElementById("result")
+    .style.display = "none";
+
+  document.getElementById("status")
+    .innerText =
+    "Camera ready — waiting for QR";
+}
+
+window.addEventListener(
+  "load",
+  startScanner
+);
+
+</script>
+
+</body>
+</html>
