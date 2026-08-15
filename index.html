@@ -152,9 +152,7 @@
 
 <script>
 
-const BACKEND =
-"https://script.google.com/macros/s/AKfycbwdjhG_W86uQmcvp2Oz3sho6DIR3gzIuMjiuhLcqxdHqWJEGXMLe9_FATYjIaVSYJTk/exec";
-
+const BACKEND = "https://script.google.com/macros/s/AKfycbwdjhG_W86uQmcvp2Oz3sho6DIR3gzIuMjiuhLcqxdHqWJEGXMLe9_FATYjIaVSYJTk/exec";
 let busy = false;
 let lastCode = "";
 
@@ -214,7 +212,7 @@ function callBackend(action, id, pin, callback) {
       "&pin=" +
       encodeURIComponent(pin);
   }
-
+alert("BACKEND REQUEST:\n" + url);
   script.src = url;
 
   document.body.appendChild(script);
