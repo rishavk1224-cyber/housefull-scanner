@@ -303,7 +303,10 @@ function showResult(result) {
   box.style.display = "block";
 
   if (!result.ticket) {
-
+alert(
+  "Backend received ID: " +
+  (result.receivedID || "NOT PROVIDED")
+);
     box.className =
       "result invalid";
 
