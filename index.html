@@ -181,7 +181,7 @@ function callBackend(action, id, pin, callback) {
 
  window[callbackName] = function(data) {
 
-  alert("BACKEND RESPONSE:\n\n" + JSON.stringify(data));
+
 
   try {
     callback(data);
