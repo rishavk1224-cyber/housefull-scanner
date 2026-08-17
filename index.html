@@ -296,7 +296,6 @@ if (match) {
 
   });
 }
-
 function showResult(result) {
 
   const box =
@@ -305,10 +304,7 @@ function showResult(result) {
   box.style.display = "block";
 
   if (!result.ticket) {
-alert(
-  "Backend received ID: " +
-  (result.receivedID || "NOT PROVIDED")
-);
+
     box.className =
       "result invalid";
 
@@ -328,8 +324,19 @@ alert(
     return;
   }
 
-  const ticket =
-    result.ticket;
+  const ticket = result.ticket;
+
+  // Apps Script returns the ticket as:
+  // [ID, Guest, Phone/Notes, Type, Status, First Scan, Last Scan, Count]
+
+  const ticketID =
+    ticket[0] || "";
+
+  const guest =
+    ticket[1] || "Not assigned";
+
+  const type =
+    ticket[3] || "General Entry";
 
   if (result.status === "VALID") {
 
@@ -345,23 +352,23 @@ alert(
       "<div class='ticket'>" +
 
       "<b>Ticket:</b> " +
-      escapeHTML(ticket.id) +
+      escapeHTML(ticketID) +
 
       "<br>" +
 
       "<b>Guest:</b> " +
-      escapeHTML(ticket.guest || "Not assigned") +
+      escapeHTML(guest) +
 
       "<br>" +
 
       "<b>Type:</b> " +
-      escapeHTML(ticket.type || "General Entry") +
+      escapeHTML(type) +
 
       "</div>" +
 
       "<button class='use' " +
       "onclick='markUsed(\"" +
-      escapeHTML(ticket.id) +
+      escapeHTML(ticketID) +
       "\")'>" +
 
       "MARK AS USED" +
@@ -389,12 +396,17 @@ alert(
       "<div class='ticket'>" +
 
       "<b>Ticket:</b> " +
-      escapeHTML(ticket.id) +
+      escapeHTML(ticketID) +
 
       "<br>" +
 
       "<b>Guest:</b> " +
-      escapeHTML(ticket.guest || "Not assigned") +
+      escapeHTML(guest) +
+
+      "<br>" +
+
+      "<b>Type:</b> " +
+      escapeHTML(type) +
 
       "</div>" +
 
@@ -406,7 +418,6 @@ alert(
       "</button>";
   }
 }
-
 function markUsed(id) {
 
   const pin =
