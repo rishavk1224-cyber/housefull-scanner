@@ -179,16 +179,18 @@ function callBackend(action, id, pin, callback) {
   const script =
     document.createElement("script");
 
-  window[callbackName] = function(data) {
+ window[callbackName] = function(data) {
 
-    try {
-      callback(data);
-    } finally {
-      delete window[callbackName];
-      script.remove();
-    }
+  alert("BACKEND RESPONSE:\n\n" + JSON.stringify(data));
 
-  };
+  try {
+    callback(data);
+  } finally {
+    delete window[callbackName];
+    script.remove();
+  }
+
+};
 
   script.onerror = function() {
 
